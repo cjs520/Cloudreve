@@ -27,7 +27,7 @@ func QiniuCallback(c *gin.Context) {
 	if err := c.ShouldBindJSON(&callbackBody); err == nil {
 		res := callback.ProcessCallback(callbackBody, c)
 		if res.Code != 0 {
-			c.JSON(401, serializer.QiniuCallbackFailed{Error: res.Msg})
+			c.JSON(401, serializer.GeneralUploadCallbackFailed{Error: res.Msg})
 		} else {
 			c.JSON(200, res)
 		}
@@ -110,6 +110,7 @@ func COSCallback(c *gin.Context) {
 
 // S3Callback S3上传完成客户端回调
 func S3Callback(c *gin.Context) {
+	c.Header("Access-Control-Allow-Origin", "*")
 	var callbackBody callback.S3Callback
 	if err := c.ShouldBindQuery(&callbackBody); err == nil {
 		res := callbackBody.PreProcess(c)
