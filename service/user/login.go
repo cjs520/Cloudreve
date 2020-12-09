@@ -3,7 +3,6 @@ package user
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	model "github.com/cloudreve/Cloudreve/v3/models"
@@ -108,7 +107,7 @@ func (service *UserResetEmailService) Reset(c *gin.Context) serializer.Response 
 		finalURL.RawQuery = queries.Encode()
 
 		// 发送密码重设邮件
-		title, body := email.NewResetEmail(user.Nick, strings.ReplaceAll(finalURL.String(), "/reset", "/#/reset"))
+		title, body := email.NewResetEmail(user.Nick, finalURL.String())
 		if err := email.Send(user.Email, title, body); err != nil {
 			return serializer.Err(serializer.CodeInternalSetting, "无法发送密码重设邮件", err)
 		}
@@ -172,10 +171,10 @@ func (service *UserLoginService) Login(c *gin.Context) serializer.Response {
 
 	// 一系列校验
 	if err != nil {
-		return serializer.Err(401, "用户邮箱或密码错误", err)
+		return serializer.Err(serializer.CodeCredentialInvalid, "用户邮箱或密码错误", err)
 	}
 	if authOK, _ := expectedUser.CheckPassword(service.Password); !authOK {
-		return serializer.Err(401, "用户邮箱或密码错误", nil)
+		return serializer.Err(serializer.CodeCredentialInvalid, "用户邮箱或密码错误", nil)
 	}
 	if expectedUser.Status == model.Baned || expectedUser.Status == model.OveruseBaned {
 		return serializer.Err(403, "该账号已被封禁", nil)
