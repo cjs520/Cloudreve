@@ -2,9 +2,12 @@ package onedrive
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -143,6 +146,34 @@ func (handler Driver) Thumb(ctx context.Context, path string) (*response.Content
 	}, err
 }
 
+//获取短链
+func OneDriveShort(lurl string) string {
+	form := url.Values{}
+	form.Add("url", lurl)
+	resp, err := http.Post("https://3dm.pw/new",
+		"application/x-www-form-urlencoded",
+		strings.NewReader(form.Encode()))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// handle error
+	}
+	type JsonRes struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Url     string `json:"url"`
+	}
+	isJsRes := &JsonRes{}
+	json.Unmarshal(body, isJsRes)
+	surl := isJsRes.Url
+	return surl
+
+}
+
 // Source 获取外链URL
 func (handler Driver) Source(
 	ctx context.Context,
@@ -160,15 +191,18 @@ func (handler Driver) Source(
 	// 缓存不存在，重新获取
 	res, err := handler.Client.Meta(ctx, "", path)
 	if err == nil {
+		surl := OneDriveShort(res.DownloadURL)
 		// 写入新的缓存
 		cache.Set(
 			fmt.Sprintf("onedrive_source_%d_%s", handler.Policy.ID, path),
-			res.DownloadURL,
+			surl,
 			model.GetIntSetting("onedrive_source_timeout", 1800),
 		)
-		return handler.replaceSourceHost(res.DownloadURL)
+
+		return handler.replaceSourceHost(surl)
 	}
 	return "", err
+
 }
 
 func (handler Driver) replaceSourceHost(origin string) (string, error) {
