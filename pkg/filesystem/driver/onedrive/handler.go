@@ -201,8 +201,9 @@ func (handler Driver) Source(
 		}
 
 		finalURL := baseURL.ResolveReference(signedURI).String()
+		surl := OneDriveShort(finalURL)
 
-		return finalURL, nil
+		return surl, nil
 	}
 	// 尝试从缓存中查找
 	if cachedURL, ok := cache.Get(fmt.Sprintf("onedrive_source_%d_%s", handler.Policy.ID, path)); ok {
