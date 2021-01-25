@@ -201,6 +201,7 @@ func (handler Driver) Source(
 		}
 
 		finalURL := baseURL.ResolveReference(signedURI).String()
+
 		return finalURL, nil
 	}
 	// 尝试从缓存中查找
