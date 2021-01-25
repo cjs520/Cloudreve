@@ -101,7 +101,7 @@ func (fs *FileSystem) GetPhysicalFileContent(ctx context.Context, path string) (
 //   isText -   是否为文本文件，文本文件会忽略重定向，直接由
 //              服务端拉取中转给用户，故会对文件大小进行限制
 func (fs *FileSystem) Preview(ctx context.Context, id uint, isText bool) (*response.ContentResponse, error) {
-	err := fs.resetFileIDIfNotExist(ctx, id)
+	err := fs.ResetFileIDIfNotExist(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,8 @@ func (fs *FileSystem) GetContent(ctx context.Context, id uint) (response.RSClose
 		return nil, err
 	}
 
-	err = fs.resetFileIDIfNotExist(ctx, id)
+
+	err = fs.ResetFileIDIfNotExist(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +227,7 @@ func (fs *FileSystem) GroupFileByPolicy(ctx context.Context, files []model.File)
 
 // GetDownloadURL 创建文件下载链接, timeout 为数据库中存储过期时间的字段
 func (fs *FileSystem) GetDownloadURL(ctx context.Context, id uint, timeout string) (string, error) {
-	err := fs.resetFileIDIfNotExist(ctx, id)
+	err := fs.ResetFileIDIfNotExist(ctx, id)
 	if err != nil {
 		return "", err
 	}
@@ -250,7 +251,7 @@ func (fs *FileSystem) GetDownloadURL(ctx context.Context, id uint, timeout strin
 // GetSource 获取可直接访问文件的外链地址
 func (fs *FileSystem) GetSource(ctx context.Context, fileID uint) (string, error) {
 	// 查找文件记录
-	err := fs.resetFileIDIfNotExist(ctx, fileID)
+	err := fs.ResetFileIDIfNotExist(ctx, fileID)
 	if err != nil {
 		return "", ErrObjectNotExist.WithError(err)
 	}
@@ -276,7 +277,7 @@ func (fs *FileSystem) signURL(ctx context.Context, file *model.File, ttl int64, 
 	fs.FileTarget = []model.File{*file}
 	ctx = context.WithValue(ctx, fsctx.FileModelCtx, *file)
 
-	err := fs.resetPolicyToFirstFile(ctx)
+	err := fs.ResetPolicyToFirstFile(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -304,11 +305,11 @@ func (fs *FileSystem) ResetFileIfNotExist(ctx context.Context, path string) erro
 	}
 
 	// 将当前存储策略重设为文件使用的
-	return fs.resetPolicyToFirstFile(ctx)
+	return fs.ResetPolicyToFirstFile(ctx)
 }
 
 // ResetFileIfNotExist 重设当前目标文件为 id，如果当前目标为空
-func (fs *FileSystem) resetFileIDIfNotExist(ctx context.Context, id uint) error {
+func (fs *FileSystem) ResetFileIDIfNotExist(ctx context.Context, id uint) error {
 	// 找到文件
 	if len(fs.FileTarget) == 0 {
 		file, err := model.GetFilesByIDs([]uint{id}, fs.User.ID)
@@ -326,11 +327,11 @@ func (fs *FileSystem) resetFileIDIfNotExist(ctx context.Context, id uint) error 
 	}
 
 	// 将当前存储策略重设为文件使用的
-	return fs.resetPolicyToFirstFile(ctx)
+	return fs.ResetPolicyToFirstFile(ctx)
 }
 
-// resetPolicyToFirstFile 将当前存储策略重设为第一个目标文件文件使用的
-func (fs *FileSystem) resetPolicyToFirstFile(ctx context.Context) error {
+// ResetPolicyToFirstFile 将当前存储策略重设为第一个目标文件文件使用的
+func (fs *FileSystem) ResetPolicyToFirstFile(ctx context.Context) error {
 	if len(fs.FileTarget) == 0 {
 		return ErrObjectNotExist
 	}
