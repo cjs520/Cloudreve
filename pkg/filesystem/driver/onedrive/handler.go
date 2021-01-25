@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cloudreve/Cloudreve/v3/pkg/auth"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -183,6 +184,25 @@ func (handler Driver) Source(
 	isDownload bool,
 	speed int,
 ) (string, error) {
+	if !isDownload {
+		file, ok := ctx.Value(fsctx.FileModelCtx).(model.File)
+		if !ok {
+			return "", errors.New("无法获取文件记录上下文")
+		}
+
+		// 签名生成文件记录
+		signedURI, err := auth.SignURI(
+			auth.General,
+			fmt.Sprintf("/api/v3/file/get/%d/%s", file.ID, file.Name),
+			ttl,
+		)
+		if err != nil {
+			return "", serializer.NewError(serializer.CodeEncryptError, "无法对URL进行签名", err)
+		}
+
+		finalURL := baseURL.ResolveReference(signedURI).String()
+		return finalURL, nil
+	}
 	// 尝试从缓存中查找
 	if cachedURL, ok := cache.Get(fmt.Sprintf("onedrive_source_%d_%s", handler.Policy.ID, path)); ok {
 		return handler.replaceSourceHost(cachedURL.(string))
@@ -191,15 +211,15 @@ func (handler Driver) Source(
 	// 缓存不存在，重新获取
 	res, err := handler.Client.Meta(ctx, "", path)
 	if err == nil {
-		surl := OneDriveShort(res.DownloadURL)
+
 		// 写入新的缓存
 		cache.Set(
 			fmt.Sprintf("onedrive_source_%d_%s", handler.Policy.ID, path),
-			surl,
+			res.DownloadURL,
 			model.GetIntSetting("onedrive_source_timeout", 1800),
 		)
 
-		return handler.replaceSourceHost(surl)
+		return handler.replaceSourceHost(res.DownloadURL)
 	}
 	return "", err
 

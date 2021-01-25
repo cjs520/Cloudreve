@@ -161,11 +161,26 @@ func (service *FileAnonymousGetService) Download(ctx context.Context, c *gin.Con
 		return serializer.Err(serializer.CodeGroupNotAllowed, err.Error(), err)
 	}
 	defer fs.Recycle()
-
 	// 查找文件
 	err = fs.SetTargetFileByIDs([]uint{service.ID})
 	if err != nil {
 		return serializer.Err(serializer.CodeNotSet, err.Error(), err)
+	}
+
+	err = fs.ResetFileIDIfNotExist(ctx, 0)
+	if err != nil {
+		return serializer.Err(serializer.CodeNotSet, err.Error(), err)
+	}
+
+	if fs.Policy.Type == "onedrive" {
+		downloadURL, err := fs.GetDownloadURL(ctx, 0, "download_timeout")
+		if err != nil {
+			return serializer.Err(serializer.CodeNotSet, err.Error(), err)
+		}
+		c.Redirect(302, downloadURL)
+		return serializer.Response{
+			Code: 0,
+		}
 	}
 
 	// 获取文件流
