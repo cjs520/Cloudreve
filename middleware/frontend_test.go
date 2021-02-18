@@ -58,13 +58,13 @@ func TestFrontendFileHandler(t *testing.T) {
 		asserts.False(c.IsAborted())
 	}
 
-	// index.html 读取失败
+	// user.html 读取失败
 	{
-		file, _ := util.CreatNestedFile("tests/index.html")
+		file, _ := util.CreatNestedFile("tests/user.html")
 		file.Close()
 		testStatic := &StaticMock{}
 		bootstrap.StaticFS = testStatic
-		testStatic.On("Open", "/index.html").
+		testStatic.On("Open", "/user.html").
 			Return(file, nil)
 		TestFunc := FrontendFileHandler()
 
@@ -77,11 +77,11 @@ func TestFrontendFileHandler(t *testing.T) {
 
 	// 成功且命中
 	{
-		file, _ := util.CreatNestedFile("tests/index.html")
+		file, _ := util.CreatNestedFile("tests/user.html")
 		defer file.Close()
 		testStatic := &StaticMock{}
 		bootstrap.StaticFS = testStatic
-		testStatic.On("Open", "/index.html").
+		testStatic.On("Open", "/user.html").
 			Return(file, nil)
 		TestFunc := FrontendFileHandler()
 
@@ -100,11 +100,11 @@ func TestFrontendFileHandler(t *testing.T) {
 
 	// 成功且命中静态文件
 	{
-		file, _ := util.CreatNestedFile("tests/index.html")
+		file, _ := util.CreatNestedFile("tests/user.html")
 		defer file.Close()
 		testStatic := &StaticMock{}
 		bootstrap.StaticFS = testStatic
-		testStatic.On("Open", "/index.html").
+		testStatic.On("Open", "/user.html").
 			Return(file, nil)
 		testStatic.On("Exists", "/", "/2").
 			Return(true)
@@ -124,11 +124,11 @@ func TestFrontendFileHandler(t *testing.T) {
 	// API 相关跳过
 	{
 		for _, reqPath := range []string{"/api/user", "/manifest.json", "/dav/path"} {
-			file, _ := util.CreatNestedFile("tests/index.html")
+			file, _ := util.CreatNestedFile("tests/user.html")
 			defer file.Close()
 			testStatic := &StaticMock{}
 			bootstrap.StaticFS = testStatic
-			testStatic.On("Open", "/index.html").
+			testStatic.On("Open", "/user.html").
 				Return(file, nil)
 			TestFunc := FrontendFileHandler()
 
